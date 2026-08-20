@@ -1,5 +1,5 @@
 /*!
- * Particle Studio v2.3.0
+ * Particle Studio v2.4.0
  * Embeddable interactive particle runtime.
  * MIT License
  */
@@ -7,7 +7,7 @@
   "use strict";
   if (typeof window === "undefined" || typeof document === "undefined") return;
 
-  const VERSION = "2.3.0";
+  const VERSION = "2.4.0";
 
   const PHYS_DEFAULT = 0.5, RUBBER_DEFAULT = 0.35, CHAOS_DEFAULT = 0.25;
   const RADIUS_DEFAULT = 50, SPEED_DEFAULT = 1, DENSITY_DEFAULT = 0.7;
@@ -21,7 +21,6 @@
   const HN = 5;
   const WK = [1, 0.55, 0.32, 0.18, 0.10];
   const RK = [1, 0.94, 0.86, 0.78, 0.70];
-  /* pureMax — лимит живых частиц для больших логотипов (прелоадер/hero) */
   const TIERS = {
     high: { maxLive: 150000, staticMax: 1500000, pureMax: 300000 },
     balanced: { maxLive: 60000, staticMax: 400000, pureMax: 150000 },
@@ -57,6 +56,24 @@
       console.warn("[ParticleStudio]", err.code + ":", err.message);
     }
   }
+  /* v2.4.0: текст → canvas, который движок сэmplит как картинку */
+  function makeTextCanvas(text, color) {
+    const fs = 220, pad = 30;
+    const font = "800 " + fs + "px -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif";
+    const probe = document.createElement("canvas").getContext("2d");
+    probe.font = font;
+    const w = Math.max(2, Math.ceil(probe.measureText(text).width));
+    const c = document.createElement("canvas");
+    c.width = w + pad * 2;
+    c.height = fs + pad * 2;
+    const ctx = c.getContext("2d");
+    ctx.font = font;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = color || "#111111";
+    ctx.fillText(text, c.width / 2, c.height / 2);
+    return c;
+  }
 
   function normalizeOptions(opts) {
     opts = opts || {};
@@ -67,7 +84,8 @@
       density: DENSITY_DEFAULT, grain: GRAIN_DEFAULT,
       entry: ASSEMBLE_DEFAULT, logoSize: LOGO_SIZE_DEFAULT,
       background: "auto", pointerEvents: true, interaction: "cursor",
-      motion: "auto", quality: "auto", silent: false
+      motion: "auto", quality: "auto", silent: false,
+      text: "", textColor: "#111111"
     };
     const preset = opts.effect && PRESETS[opts.effect];
     if (preset) Object.assign(cfg, preset);
@@ -132,7 +150,7 @@
     let lastT = 0, tSim = 0, buildAt = 0, adaptAcc = 0, adaptN = 0, adaptUntil = 0;
     let running = false, loopScheduled = false, autoPaused = false, destroyed = false;
     let fadeOnBuild = true;
-    let logoImg = null, currentURL = "";
+    let logoImg = null, currentURL = "", currentText = "";
     let rebuildT = 0, resizeQueued = false, cachedRect = null;
 
     const mq = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
@@ -279,6 +297,7 @@
     function setImage(src) {
       if (destroyed) return;
       currentURL = src;
+      currentText = "";
       const img = new Image();
       img.onload = () => {
         if (destroyed || currentURL !== src) return;
@@ -298,6 +317,23 @@
         fail({ code: "load", message: "Не удалось загрузить изображение: " + src });
       };
       img.src = src;
+    }
+
+    /* v2.4.0 */
+    function setText(text, color) {
+      if (destroyed || !text) return;
+      currentText = String(text);
+      currentURL = "";
+      logoImg = makeTextCanvas(currentText, color || cfg.textColor);
+      fadeOnBuild = true;
+      if (!resize()) {
+        fail({ code: "empty", message: "Контейнер имеет нулевой размер" });
+        return;
+      }
+      build(logoImg, false);
+      if (hooks.onReady) hooks.onReady(api);
+      if (reducedNow()) staticRender();
+      else start();
     }
 
     function resize() {
@@ -433,7 +469,6 @@
             ? DEFAULT_LIGHT_BG
             : "linear-gradient(135deg, rgb(" + tl.join(",") + "), rgb(" + br.join(",") + "))";
       if (hooks.onBackground) hooks.onBackground(bgCss);
-
       function inMask(i) {
         const a = data[i + 3];
         if (hasAlpha) return a > 128;
@@ -441,7 +476,6 @@
         const dr = data[i] - bg[0], dg = data[i + 1] - bg[1], db = data[i + 2] - bg[2];
         return dr * dr + dg * dg + db * db > 40 * 40;
       }
-
       const gapCss = 1.2 - 0.85 * density;
       let gapDev = Math.max(1, Math.round(gapCss * DPR));
       let est = (dw / gapDev) * (dh / gapDev);
@@ -462,13 +496,9 @@
         fail({ code: "empty", message: "Маска изображения пуста (прозрачность/фон не содержат видимых пикселей)" });
         return;
       }
-
-      /* v2.3.0: большой логотип → больше живых частиц (pureMax),
-         мелкий масштаб частиц, без статичного слепка. */
       const pureParticles = total > MAX_LIVE;
       const n = pureParticles ? Math.min(total, ALLOC) : total;
       const sizeScale = pureParticles ? Math.sqrt(total / n) : 1;
-
       const sAvg = [], sN = [];
       let sNum = 0;
       const sBkt = new Uint8Array(total);
@@ -492,7 +522,6 @@
         sBkt[s] = bi;
       }
       const sSize = Math.max(1.1, gapDev) * 1.05;
-
       if (USE_GL) {
         allocStaticTarget();
         const sp = new Float32Array(total * 2);
@@ -554,14 +583,12 @@
         }
         hasStatic = true;
       }
-
       const step = total / n;
       const off0 = Math.random() * step;
       const bucketAvg = [], bucketN = [];
       bucketNum = 0; count = 0;
       const cx0 = ox + dw / 2, cy0 = oy + dh / 2;
       const ringR = Math.max(dw, dh) * 0.75;
-
       for (let s = 0; s < n; s++) {
         const sourceIndex = maskIdx[Math.min(total - 1, (off0 + s * step) | 0)];
         const li = sourceIndex * 4;
@@ -619,7 +646,6 @@
         CHA[id] = Math.random();
         OSC[id] = (Math.random() * 32) | 0;
       }
-
       for (let i = count - 1; i > 0; i--) {
         const j = (Math.random() * (i + 1)) | 0;
         if (j === i) continue;
@@ -639,13 +665,11 @@
         let u = OSC[i]; OSC[i] = OSC[j]; OSC[j] = u;
         u = BKT[i]; BKT[i] = BKT[j]; BKT[j] = u;
       }
-
       for (let i = 0; i < count; i++) {
         const e = bucketAvg[BKT[i]];
         COL[i * 4] = e[0] / 255; COL[i * 4 + 1] = e[1] / 255;
         COL[i * 4 + 2] = e[2] / 255; COL[i * 4 + 3] = e[3] / 255;
       }
-
       if (USE_GL) {
         gl.useProgram(prog);
         gl.bindBuffer(gl.ARRAY_BUFFER, colBuf);
@@ -662,9 +686,7 @@
           e => "rgba(" + (e[0] | 0) + "," + (e[1] | 0) + "," + (e[2] | 0) + "," + (e[3] / 255).toFixed(3) + ")"
         );
       }
-
       if (pureParticles) { hasStatic = false; offStat = null; }
-
       active = count;
       buildAt = performance.now();
       adaptAcc = 0; adaptN = 0;
@@ -938,6 +960,7 @@
       },
       hide() { if (destroyed) return; running = false; canvas.style.opacity = "0"; },
       setImage(src) { if (destroyed) return; setImage(src); },
+      setText(text, color) { if (destroyed) return; setText(text, color); },
       scatterOut() {
         if (destroyed || !logoImg) return;
         for (let i = 0; i < count; i++) {
@@ -997,7 +1020,9 @@
               cfg.interaction = v === "none" ? "none" : "cursor";
               applyPointerMode();
               break;
-            case "image": setImage(v); break;
+            case "image": currentText = ""; setImage(v); break;
+            case "text": if (!v) { currentText = ""; } else setText(v, patch.textColor); break;
+            case "textColor": cfg.textColor = String(v); if (currentText) setText(currentText, cfg.textColor); break;
             case "silent": cfg.silent = !!v; break;
             default: cfg[k] = v;
           }
@@ -1043,6 +1068,7 @@
           physics: phys, rubber: rubber, chaos: chaos,
           radius: radiusCss, speed: speed, density: density, grain: grain,
           entry: assemble, logoSize: sizeCss,
+          text: currentText, textColor: cfg.textColor,
           background: transp ? "transparent" : customBg || "auto",
           pointerEvents: cfg.pointerEvents, interaction: cfg.interaction,
           motion: cfg.motion, quality: cfg.quality, silent: cfg.silent
@@ -1084,7 +1110,8 @@
     canvas.setAttribute("data-ps-canvas", "");
     root.appendChild(canvas);
     const api = createEngine(hostEl, canvas, cfg, hooks);
-    if (cfg.image) api.setImage(cfg.image);
+    if (cfg.text) api.setText(cfg.text);
+    else if (cfg.image) api.setImage(cfg.image);
     return api;
   }
 
@@ -1120,6 +1147,7 @@
       hide,
       scatterOut() { if (api) api.scatterOut(); },
       setImage(src) { if (api) api.setImage(src); },
+      setText(text, color) { if (api) api.setText(text, color); },
       update(patch) { if (api) api.update(patch); },
       destroy,
       get playing() { return api ? api.playing : false; },
