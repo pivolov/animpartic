@@ -808,7 +808,7 @@
         const avg = adaptAcc / adaptN;
         adaptAcc = 0; adaptN = 0;
         const inWindow = now < adaptUntil;
-        if ((inWindow || avg > EMERG_MS) && active > ACTIVE_FLOOR) {
+        if (avg > EMERG_MS && active > ACTIVE_FLOOR) {
           active = Math.max(ACTIVE_FLOOR, (active * 0.85) | 0);
         } else if (inWindow && avg < ADAPT_LO && active < count) {
           active = Math.min(count, (active * 1.25) | 0);
