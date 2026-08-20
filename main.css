@@ -1,0 +1,535 @@
+/* ========================= BASE ========================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+body {
+  --ink: #111111;
+  --muted: #6b6b70;
+  --track: #3f3f46;
+  --thumb: #ffffff;
+  --btn: #17171b;
+  --btn-ink: #ffffff;
+  --ghost: rgba(0, 0, 0, 0.18);
+  --hint-bg: rgba(0, 0, 0, 0.04);
+  --danger: #c62828;
+
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+}
+
+body[data-theme="dark"] {
+  --ink: #f5f6fa;
+  --muted: rgba(255, 255, 255, 0.65);
+  --track: rgba(255, 255, 255, 0.35);
+  --thumb: #ffffff;
+  --btn: #ffffff;
+  --btn-ink: #111111;
+  --ghost: rgba(255, 255, 255, 0.3);
+  --hint-bg: rgba(255, 255, 255, 0.06);
+  --danger: #ff6b6b;
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+.seg button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* ========================= STAGE / HINT ========================= */
+
+#stage {
+  position: fixed;
+  inset: 0;
+  display: block;
+}
+
+#hint {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  padding: 26px 34px;
+  border-radius: 20px;
+  border: 1.5px dashed var(--ghost);
+  background: var(--hint-bg);
+  cursor: pointer;
+  user-select: none;
+  z-index: 2;
+  text-align: center;
+  max-width: min(90vw, 480px);
+}
+
+#hint.show {
+  display: flex;
+  animation: hintPulse 2.4s ease-in-out infinite;
+}
+
+#hint:hover {
+  border-color: var(--ink);
+}
+
+#hint svg {
+  width: 26px;
+  height: 26px;
+  opacity: 0.75;
+}
+
+@keyframes hintPulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  50% {
+    transform: translate(-50%, -50%) scale(1.035);
+  }
+}
+
+#picker {
+  display: none;
+}
+
+/* ========================= BOTTOM BAR ========================= */
+
+#bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  display: none;
+  padding: 12px 30px 22px;
+  color: var(--ink);
+}
+
+#bar.show {
+  display: block;
+}
+
+#simple {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+#chips {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--ghost);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.chip:hover {
+  color: var(--ink);
+}
+
+.chip.on {
+  background: var(--btn);
+  color: var(--btn-ink);
+  border-color: transparent;
+}
+
+#actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+#actions button {
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+#actions button:active {
+  transform: translateY(1px);
+}
+
+#copy {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--ghost);
+}
+
+#copy:hover {
+  border-color: var(--ink);
+}
+
+#save {
+  background: var(--btn);
+  color: var(--btn-ink);
+  border: 0;
+}
+
+#save:hover {
+  opacity: 0.92;
+}
+
+/* ========================= ADVANCED PANEL ========================= */
+
+#adv {
+  display: none;
+  margin-top: 18px;
+}
+
+#adv.open {
+  display: block;
+}
+
+#row1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.mini {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: 8px;
+  cursor: pointer;
+  user-select: none;
+  flex-wrap: wrap;
+}
+
+.mini input[type="checkbox"] {
+  accent-color: var(--btn);
+  cursor: pointer;
+}
+
+.mini input[type="text"] {
+  font-size: 12px;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--ghost);
+  border-radius: 8px;
+  padding: 6px 8px;
+  min-width: 180px;
+}
+
+.mini input[type="text"]:focus {
+  border-color: var(--ink);
+}
+
+#row2 {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 26px;
+  flex-wrap: wrap;
+}
+
+#sliders {
+  display: flex;
+  gap: 26px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.ctl {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 140px;
+}
+
+.ctl span {
+  font-size: 14px;
+  font-weight: 500;
+  user-select: none;
+}
+
+.ctl input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 150px;
+  height: 18px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ctl input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--track);
+}
+
+.ctl input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--thumb);
+  margin-top: -7px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.12),
+    0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.ctl input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--track);
+}
+
+.ctl input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--thumb);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.12),
+    0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* ========================= SEGMENT CONTROLS ========================= */
+
+.seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--ghost);
+  border-radius: 10px;
+  background: var(--hint-bg);
+  flex-wrap: wrap;
+}
+
+.seg button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.seg button:hover {
+  color: var(--ink);
+}
+
+.seg button.on {
+  background: var(--btn);
+  color: var(--btn-ink);
+}
+
+/* ========================= EXPORT BOX ========================= */
+
+#exportBox {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  min-width: 260px;
+}
+
+#exportWarning {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+  max-width: 420px;
+}
+
+#exportWarning:empty {
+  display: none;
+}
+
+#exportWarning.error {
+  color: var(--danger);
+}
+
+/* ========================= GEAR BUTTON ========================= */
+
+#advToggle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--ghost);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.2s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+#advToggle:hover {
+  transform: rotate(30deg);
+  color: var(--ink);
+}
+
+#advToggle.on {
+  background: var(--btn);
+  color: var(--btn-ink);
+  border-color: transparent;
+}
+
+#advToggle svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ========================= RESPONSIVE ========================= */
+
+@media (max-width: 900px) {
+  #bar {
+    padding: 12px 16px 18px;
+  }
+
+  #simple {
+    align-items: flex-start;
+    justify-content: stretch;
+  }
+
+  #actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  #row1,
+  #row2 {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #sliders {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+  }
+
+  .ctl {
+    min-width: 0;
+  }
+
+  .ctl input[type="range"] {
+    width: 100%;
+  }
+
+  #exportBox {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .mini {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .mini input[type="text"] {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .seg {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-height: 700px) {
+  #bar {
+    max-height: 65vh;
+    overflow: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #hint.show {
+    animation: none;
+  }
+
+  #advToggle,
+  .chip,
+  #actions button,
+  .seg button {
+    transition: none;
+  }
+}
+
+#actions #advToggle {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#actions #advToggle svg { width: 16px; height: 16px; stroke: var(--muted); }
+#actions #advToggle.on svg { stroke: var(--btn-ink); }

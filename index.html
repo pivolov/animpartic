@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Particle Studio — Editor</title>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <div id="stage"></div>
+
+  <div id="hint">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 3v12"></path>
+      <path d="M7 10l5 5 5-5"></path>
+      <path d="M5 21h14"></path>
+    </svg>
+    <span>Перетащите или выберите логотип</span>
+  </div>
+
+  <input type="file" id="picker" accept="image/*">
+
+  <div id="bar">
+    <div id="simple">
+      <div id="chips">
+        <button class="chip" data-p="sand">Песок</button>
+        <button class="chip" data-p="rubber">Резина</button>
+        <button class="chip" data-p="haze">Дымка</button>
+      </div>
+
+      <div id="actions">
+        <button id="advToggle" type="button" aria-label="Дополнительные настройки">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+
+        <button id="copy" type="button">Копировать</button>
+        <button id="save" type="button">Сохранить в HTML</button>
+      </div>
+    </div>
+
+    <div id="adv">
+      <div id="row1">
+        <div class="seg" id="assembleSeg">
+          <button type="button" data-v="random" class="on">Случайно</button>
+          <button type="button" data-v="sides">Со сторон</button>
+          <button type="button" data-v="center">Из центра</button>
+          <button type="button" data-v="ring">По кругу</button>
+          <button type="button" data-v="rain">Дождь</button>
+        </div>
+
+        <div class="seg" id="sizeSeg">
+          <button type="button" data-v="256">256</button>
+          <button type="button" data-v="512" class="on">512</button>
+          <button type="button" data-v="1024">1024</button>
+        </div>
+
+        <label class="mini">
+          <input type="checkbox" id="transp">
+          прозрачный фон (экспорт)
+        </label>
+
+        <label class="mini">
+          Путь к движку
+          <input type="text" id="srcPath" value="particle.js" spellcheck="false">
+        </label>
+      </div>
+
+      <div id="row2">
+        <div id="sliders">
+          <div class="ctl">
+            <span>Физика</span>
+            <input type="range" id="phys" min="0" max="100" value="50">
+          </div>
+
+          <div class="ctl">
+            <span>Резина</span>
+            <input type="range" id="rub" min="0" max="100" value="35">
+          </div>
+
+          <div class="ctl">
+            <span>Хаос</span>
+            <input type="range" id="cha" min="0" max="100" value="25">
+          </div>
+
+          <div class="ctl">
+            <span>Радиус</span>
+            <input type="range" id="rad" min="10" max="200" value="50">
+          </div>
+
+          <div class="ctl">
+            <span>Скорость</span>
+            <input type="range" id="spd" min="0" max="100" value="32">
+          </div>
+
+          <div class="ctl">
+            <span>Плотность</span>
+            <input type="range" id="den" min="0" max="100" value="70">
+          </div>
+
+          <div class="ctl">
+            <span>Зерно</span>
+            <input type="range" id="grn" min="0" max="100" value="100">
+          </div>
+        </div>
+
+        <div id="exportBox">
+          <div class="seg" id="usageSeg">
+            <button type="button" data-v="block" class="on">Блок</button>
+            <button type="button" data-v="preloader">Прелоадер</button>
+          </div>
+
+          <div class="seg" id="exportSeg">
+            <button type="button" data-v="html" class="on">HTML</button>
+            <button type="button" data-v="embed">Embed</button>
+            <button type="button" data-v="inline">Inline</button>
+          </div>
+
+          <div id="exportWarning" class="warning"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/particle.js"></script>
+  <script src="js/studio.js"></script>
+</body>
+</html>
