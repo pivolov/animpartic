@@ -1,13 +1,12 @@
 /*
  * Particle Studio — editor
  * Потребитель ParticleStudio API (dogfooding).
- * v2.3.0: исправлен buildStandalone (isPre), честное экранирование,
- * самодостаточное сохранение, демо-прелоадер 4 c, фон в экспорте.
+ * v2.4.0: режим «Текст» (текст → частицы), экспорт text/textColor.
  */
 (() => {
   "use strict";
 
-  const VERSION = "2.3.0";
+  const VERSION = "2.4.0";
 
   const $ = id => document.getElementById(id);
 
@@ -42,6 +41,10 @@
     srcPath: $("srcPath"),
     exportWarning: $("exportWarning"),
 
+    modeSeg: $("modeSeg"),
+    textInput: $("textInput"),
+    textColor: $("textColor"),
+
     save: $("save"),
     copy: $("copy"),
     advT: $("advToggle")
@@ -65,6 +68,10 @@
   let usageMode = "block";
   let srcPath = "particle.js";
 
+  let mode = "image";
+  let text = "404";
+  let textColor = "#111111";
+
   try {
     const s = JSON.parse(localStorage.getItem("pls") || "null");
 
@@ -83,6 +90,9 @@
       exportFormat = s.exportFormat ?? "html";
       usageMode = s.usageMode === "preloader" ? "preloader" : "block";
       srcPath = typeof s.srcPath === "string" ? s.srcPath : "particle.js";
+      mode = s.mode === "text" ? "text" : "image";
+      text = typeof s.text === "string" ? s.text : "404";
+      textColor = typeof s.textColor === "string" ? s.textColor : "#111111";
     }
   } catch (e) {}
 
@@ -115,11 +125,18 @@
     segSet(els.sizeSeg, sizeCss);
     segSet(els.expSeg, exportFormat);
     segSet(els.usageSeg, usageMode);
+    segSet(els.modeSeg, mode);
 
     els.trn.checked = transp;
 
     if (els.srcPath) {
       els.srcPath.value = srcPath;
+    }
+    if (els.textInput) {
+      els.textInput.value = text;
+    }
+    if (els.textColor) {
+      els.textColor.value = textColor;
     }
 
     if (advOpen) {
@@ -147,7 +164,10 @@
         advOpen,
         exportFormat,
         usageMode,
-        srcPath
+        srcPath,
+        mode,
+        text,
+        textColor
       }));
     } catch (e) {}
   }
@@ -199,6 +219,12 @@
   hint.classList.add("show");
   reflectUI();
 
+  let lastImage = null;
+
+  if (mode === "text") {
+    fx.setText(text, textColor);
+  }
+
   function currentConfig() {
     return fx.config;
   }
@@ -211,7 +237,12 @@
     const r = new FileReader();
 
     r.onload = () => {
+      lastImage = r.result;
+      mode = "image";
+      segSet(els.modeSeg, mode);
+      fx.update({ text: "" });
       fx.setImage(r.result);
+      persist();
     };
 
     r.readAsDataURL(f);
@@ -309,7 +340,9 @@
       entry: c.entry,
       logoSize: Math.round(c.logoSize),
       background: c.background,
-      motion: "auto"
+      motion: "auto",
+      text: c.text || "",
+      textColor: c.textColor || "#111111"
     };
 
     if (usageMode === "preloader") {
@@ -331,7 +364,10 @@
   }
 
   function commentHeader() {
-    return "<!-- Particle Studio v" + VERSION + " | mode: " + usageMode + " | format: " + exportFormat + " -->";
+    return "<!-- Particle Studio studio v" + VERSION +
+      " | engine v" + (window.ParticleStudio && ParticleStudio.version) +
+      " | mode: " + usageMode +
+      " | format: " + exportFormat + " -->";
   }
 
   function blockMarkup(id) {
@@ -524,8 +560,8 @@ ${init}
     try {
       const cfg = exportConfig(false);
 
-      if (!cfg.image) {
-        setWarning("Загрузите изображение перед экспортом.", true);
+      if (!cfg.image && !cfg.text) {
+        setWarning("Загрузите изображение или введите текст.", true);
         return;
       }
 
@@ -623,8 +659,8 @@ ${init}
   async function prepareCopy() {
     const cfg = exportConfig(false);
 
-    if (!cfg.image) {
-      setWarning("Сначала загрузите изображение.", true);
+    if (!cfg.image && !cfg.text) {
+      setWarning("Сначала загрузите изображение или введите текст.", true);
       return null;
     }
 
@@ -662,8 +698,8 @@ ${init}
   els.save.addEventListener("click", async () => {
     const cfg = exportConfig(true);
 
-    if (!cfg.image) {
-      setWarning("Сначала загрузите изображение.", true);
+    if (!cfg.image && !cfg.text) {
+      setWarning("Сначала загрузите изображение или введите текст.", true);
       return;
     }
 
@@ -807,6 +843,54 @@ ${init}
     persist();
     scheduleExportPreview();
   });
+
+  /* ========================= IMAGE / TEXT MODE ========================= */
+
+  function applySource() {
+    if (mode === "text") {
+      fx.update({ text: text, textColor: textColor });
+    } else {
+      fx.update({ text: "" });
+      if (lastImage) fx.setImage(lastImage);
+    }
+  }
+
+  if (els.modeSeg) {
+    els.modeSeg.addEventListener("click", e => {
+      const b = e.target.closest("button[data-v]");
+      if (!b) return;
+
+      mode = b.dataset.v === "text" ? "text" : "image";
+
+      segSet(els.modeSeg, mode);
+      applySource();
+
+      persist();
+      scheduleExportPreview();
+    });
+  }
+
+  if (els.textInput) {
+    els.textInput.addEventListener("input", () => {
+      text = els.textInput.value;
+
+      if (mode === "text" && text) applySource();
+
+      persist();
+      scheduleExportPreview();
+    });
+  }
+
+  if (els.textColor) {
+    els.textColor.addEventListener("input", () => {
+      textColor = els.textColor.value;
+
+      if (mode === "text" && text) applySource();
+
+      persist();
+      scheduleExportPreview();
+    });
+  }
 
   /* Presets */
 
